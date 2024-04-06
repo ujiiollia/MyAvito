@@ -2,6 +2,8 @@ package main
 
 import (
 	"app/internal/config"
+	elog "app/internal/lib/logger"
+	"app/internal/storage/sqlite"
 	"log/slog"
 	"os"
 )
@@ -12,6 +14,13 @@ func main() {
 	// log
 	log := setupLogger(cfg.Env)
 	log.Info("starting application", slog.String("env", cfg.Env))
+	// DB
+	storage, err := sqlite.New(cfg.StoragePath)
+	if err != nil {
+		log.Error("failed to init storage", elog.Err(err))
+		os.Exit(1)
+	}
+	_ = storage
 	//todo logic
 	//todo start serv
 }
