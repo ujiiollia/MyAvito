@@ -2,7 +2,6 @@ package main
 
 import (
 	"app/internal/config"
-	"fmt"
 	"log/slog"
 	"os"
 )
@@ -10,10 +9,9 @@ import (
 func main() {
 	// config
 	cfg := config.MustLoad()
-	fmt.Println(cfg.Address)
 	// log
 	log := setupLogger(cfg.Env)
-	log.Info("starting application ", slog.String("env", cfg.Env))
+	log.Info("starting application", slog.String("env", cfg.Env))
 	//todo logic
 	//todo start serv
 }
