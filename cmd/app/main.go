@@ -4,6 +4,7 @@ import (
 	"app/internal/config"
 	"app/internal/storage/sqlite"
 	elog "app/pkg/lib/logger"
+	"fmt"
 	"log/slog"
 	"os"
 )
@@ -13,15 +14,25 @@ func main() {
 	cfg := config.MustLoad()
 	// log
 	log := setupLogger(cfg.Env)
-	log.Info("starting application", slog.String("env", cfg.Env), slog.String("dbPath", cfg.StoragePath))
+	log.Info("starting application", slog.String("env", cfg.Env))
 	// DB
 	storage, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
 		log.Error("failed to init storage", elog.Err(err))
 		os.Exit(1)
 	}
-	_ = storage
-	log.Info("storage created")
+	log.Info("storage created", slog.String("dbPath", cfg.StoragePath))
+
+	//_ = storage
+	// Создаем новую фичу
+	newFeature := sqlite.Feature{
+		ID: 1,
+	}
+	err = storage.AddFeature(newFeature)
+	if err != nil {
+		fmt.Println("Ошибка при создании фичи:", err)
+		return
+	}
 	//todo logic
 	//todo start serv
 }
