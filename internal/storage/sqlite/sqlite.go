@@ -3,6 +3,8 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Storage struct {
@@ -35,11 +37,15 @@ func New(storagePath string) (*Storage, error) {
 		active INTEGER,
 		last_updated_time DATETIME
 	);
-	`)
+	`) //todo: CREATE INDEX IF NOT EXISTS
+
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", el, err)
 	}
 
+	if err = db.Ping(); err != nil {
+		return nil, fmt.Errorf("%s: %w", el, err)
+	}
 	_, err = stmt.Exec()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", el, err)

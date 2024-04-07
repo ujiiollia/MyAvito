@@ -2,8 +2,8 @@ package main
 
 import (
 	"app/internal/config"
-	elog "app/internal/lib/logger"
 	"app/internal/storage/sqlite"
+	elog "app/pkg/lib/logger"
 	"log/slog"
 	"os"
 )
@@ -13,7 +13,7 @@ func main() {
 	cfg := config.MustLoad()
 	// log
 	log := setupLogger(cfg.Env)
-	log.Info("starting application", slog.String("env", cfg.Env))
+	log.Info("starting application", slog.String("env", cfg.Env), slog.String("dbPath", cfg.StoragePath))
 	// DB
 	storage, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
@@ -21,6 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 	_ = storage
+	log.Info("storage created")
 	//todo logic
 	//todo start serv
 }
