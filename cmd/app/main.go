@@ -4,7 +4,9 @@ import (
 	"app/internal/config"
 	"app/internal/storage/sqlite"
 	elog "app/pkg/lib/logger"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/go-chi/chi"
@@ -33,20 +35,21 @@ func main() {
 	_ = storage
 	_ = user
 	{ // Создаем Баннер
-		// //todo delete
-		// newBanner := sqlite.Banner{
-		// 	FeatureID:       1,
-		// 	TagIDs:          []int{1, 2, 3},
-		// 	JSONData:        "",
-		// 	Active:          true,
-		// 	LastUpdatedTime: "2022-12-31 23:59:59",
-		// }
+		//todo delete
+		newBanner := sqlite.Banner{
+			FeatureID: 1,
+			TagIDs:    []int{1, 2, 3},
+			Content:   "",
+			IsActive:  true,
+			CreatedAt: "2022-12-31 23:59:59",
+			UpdatedAt: "2022-12-31 23:59:59",
+		}
 
-		// err = storage.AddBanner(newBanner)
-		// if err != nil {
-		// 	fmt.Println("Error adding banner:", err)
-		// 	return
-		// }
+		err = storage.AddBanner(newBanner)
+		if err != nil {
+			fmt.Println("Error adding banner:", err)
+			return
+		}
 	}
 
 	//роутер
@@ -58,7 +61,20 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	//todo handlers
-	//todo start serv
+
+	// serv
+	srv := http.Server{
+		Addr:         cfg.Address,
+		Handler:      router,
+		ReadTimeout:  cfg.HTTPServer.Timeout,
+		WriteTimeout: cfg.HTTPServer.Timeout,
+		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+	}
+	// strat server
+	if err := srv.ListenAndServe(); err != nil {
+		log.Error("failed to start serv")
+	}
+	log.Error("server stopped")
 }
 
 const (
