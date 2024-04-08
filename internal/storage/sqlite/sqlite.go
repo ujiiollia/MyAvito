@@ -14,12 +14,13 @@ type Storage struct {
 
 // Banner представляет структуру баннера
 type Banner struct {
-	ID              int
-	FeatureID       int
-	TagIDs          []int
-	JSONData        string
-	Active          bool
-	LastUpdatedTime string
+	ID        int
+	TagIDs    []int
+	FeatureID int
+	Content   string
+	IsActive  bool
+	CreatedAt string
+	UpdatedAt string
 }
 
 type User struct {
@@ -46,9 +47,9 @@ func NewBanner(storagePath string) (*Storage, error) {
 	stmt, err := db.Prepare(`
 	CREATE TABLE IF NOT EXISTS banners (
 		id INTEGER PRIMARY KEY ,
-		feature_id INTEGER NOT NULL,
 		tag_ids INTEGER NOT NULL,
-		json_data TEXT,
+		feature_id INTEGER NOT NULL,
+		content TEXT,
 		active BOOLEAN,
 		last_updated_time DATETIME
 	);`) //todo: CREATE INDEX IF NOT EXISTS ...
@@ -87,7 +88,7 @@ func NewUser(storagePath string) (*Storage, error) {
 	stmt, err = db.Prepare(`
 	CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY,
-		name TEXT VARCHAR (100) NOT NULL,
+		name TEXT VARCHAR (100) NOT NULL,gti
 		role_token INTEGER,
 		email TEXT VARCHAR (100) NOT NULL,
 		tag_ids TEXT,
@@ -121,13 +122,13 @@ func (s *Storage) GetBannerByFeatureAndTag(featureID int, tagID int, lastRevisio
 		err = s.db.QueryRow(
 			`SELECT id, feature_id, tag_ids, json_data, active, last_updated_time 
 			FROM banners WHERE feature_id=? AND ? IN (SELECT tag_ids FROM banner_tags WHERE banner_id=banners.id)`,
-			featureID, tagID).Scan(&banner.ID, &banner.FeatureID, &banner.TagIDs, &banner.JSONData, &banner.Active, &banner.LastUpdatedTime)
+			featureID, tagID).Scan(&banner.ID, &banner.FeatureID, &banner.TagIDs, &banner.Content, &banner.IsActive, &banner.UpdatedAt)
 
 	} else {
 		err = s.db.QueryRow(
 			`SELECT id, feature_id, tag_ids, json_data, active, last_updated_time 
 		FROM banners WHERE feature_id=? AND ? IN (SELECT tag_ids FROM banner_tags WHERE banner_id=banners.id)`,
-			featureID, tagID).Scan(&banner.ID, &banner.FeatureID, &banner.TagIDs, &banner.JSONData, &banner.Active, &banner.LastUpdatedTime)
+			featureID, tagID).Scan(&banner.ID, &banner.FeatureID, &banner.TagIDs, &banner.Content, &banner.IsActive, &banner.UpdatedAt)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", el, err)
@@ -135,7 +136,7 @@ func (s *Storage) GetBannerByFeatureAndTag(featureID int, tagID int, lastRevisio
 	return &banner, nil
 }
 
-// // Получения баннера по идентификатору
+// // Получение баннера по идентификатору
 // func (s *Storage) GetBannerByID(bannerID int) (*Banner, error) {
 // 	const el = "sqlite.getBannerByID"
 // 	var banner Banner
@@ -149,17 +150,41 @@ func (s *Storage) GetBannerByFeatureAndTag(featureID int, tagID int, lastRevisio
 
 func (s *Storage) AddBanner(banner Banner) error {
 	_, err := s.db.Exec(`INSERT INTO banners (feature_id, tag_ids, json_data, active, last_updated_time) VALUES (?, ?, ?, ?, ?)`,
-		banner.FeatureID, pq.Array(banner.TagIDs), banner.JSONData, banner.Active, banner.LastUpdatedTime)
+		banner.FeatureID, pq.Array(banner.TagIDs), banner.Content, banner.IsActive, banner.UpdatedAt)
 	return err
 }
 
 func (s *Storage) UpdateBanner(banner Banner) error {
 	_, err := s.db.Exec(`UPDATE banners SET feature_id=?, tag_ids=?, json_data=?, active=?, last_updated_time=? WHERE id=?`,
-		banner.FeatureID, pq.Array(banner.TagIDs), banner.JSONData, banner.Active, banner.LastUpdatedTime, banner.ID)
+		banner.FeatureID, pq.Array(banner.TagIDs), banner.Content, banner.IsActive, banner.UpdatedAt, banner.ID)
 	return err
 }
 
 func (s *Storage) DeleteBanner(id int) error {
 	_, err := s.db.Exec(`DELETE FROM banners WHERE id=?`, id)
 	return err
+}
+
+func (s *Storage) GetAllBanners() ([]Banner, error) {
+	rows, err := s.db.Query("SELECT id, tag_ids, feature_id, content, is_active, created_at, updated_at FROM banners")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var banners []Banner
+	for rows.Next() {
+		var banner Banner
+		err := rows.Scan(&banner.ID, &banner.TagIDs, &banner.FeatureID, &banner.Content, &banner.IsActive, &banner.CreatedAt, &banner.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		banners = append(banners, banner)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return banners, nil
 }
