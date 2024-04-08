@@ -4,9 +4,11 @@ import (
 	"app/internal/config"
 	"app/internal/storage/sqlite"
 	elog "app/pkg/lib/logger"
-	"fmt"
 	"log/slog"
 	"os"
+
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 func main() {
@@ -16,24 +18,46 @@ func main() {
 	log := setupLogger(cfg.Env)
 	log.Info("starting application", slog.String("env", cfg.Env))
 	// DB
-	storage, err := sqlite.New(cfg.StoragePath)
+	storage, err := sqlite.NewBanner(cfg.StoragePath)
 	if err != nil {
 		log.Error("failed to init storage", elog.Err(err))
 		os.Exit(1)
 	}
 	log.Info("storage created", slog.String("dbPath", cfg.StoragePath))
-
-	//_ = storage
-	// Создаем новую фичу
-	newFeature := sqlite.Feature{
-		ID: 1,
-	}
-	err = storage.AddFeature(newFeature)
+	user, err := sqlite.NewUser(cfg.StoragePath)
 	if err != nil {
-		fmt.Println("Ошибка при создании фичи:", err)
-		return
+		log.Error("failed to init storage", elog.Err(err))
+		os.Exit(1)
 	}
-	//todo logic
+
+	_ = storage
+	_ = user
+	{ // Создаем Баннер
+		// //todo delete
+		// newBanner := sqlite.Banner{
+		// 	FeatureID:       1,
+		// 	TagIDs:          []int{1, 2, 3},
+		// 	JSONData:        "",
+		// 	Active:          true,
+		// 	LastUpdatedTime: "2022-12-31 23:59:59",
+		// }
+
+		// err = storage.AddBanner(newBanner)
+		// if err != nil {
+		// 	fmt.Println("Error adding banner:", err)
+		// 	return
+		// }
+	}
+
+	//роутер
+	router := chi.NewRouter()
+	//MW
+	router.Use(middleware.RequestID) //ID запроса
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer) // поднять после паники в обраточике
+	router.Use(middleware.URLFormat)
+
+	//todo handlers
 	//todo start serv
 }
 

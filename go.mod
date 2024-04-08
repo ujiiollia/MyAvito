@@ -3,7 +3,9 @@ module app
 go 1.21.9
 
 require (
+	github.com/go-chi/chi v1.5.5
 	github.com/ilyakaznacheev/cleanenv v1.5.0
+	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.22
 	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0
 )
