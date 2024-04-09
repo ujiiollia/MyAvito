@@ -56,7 +56,10 @@ func main() {
 	if err != nil {
 		log.Error("failed to get pool", elog.Err(err))
 	}
-	_ = pool
+	log.Info("connected to pool succsessfully")
+
+	pg := postgresql.NewPostgres(pool)
+	_ = pg
 	//роутер
 	router := chi.NewRouter()
 	//MW

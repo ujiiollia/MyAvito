@@ -14,6 +14,9 @@ type postgres struct {
 	*pgxpool.Pool
 }
 
+func NewPostgres(pool *pgxpool.Pool) *postgres {
+	return &postgres{pool}
+}
 func GetPgxPool(PGLD string, maxAttempts int) (pool *pgxpool.Pool, err error) {
 	const el = "postgresql.postgresql.GetPgxPool"
 	config, err := pgxpool.ParseConfig(PGLD)
