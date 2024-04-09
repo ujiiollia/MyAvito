@@ -13,6 +13,7 @@ type Config struct {
 	Env         string `yaml: "env" env-default:"local"`
 	StoragePath string `yaml:"storage_path" env-required:"true"`
 	JWTkey      string `yaml: "jwt_key" env-required:"true"`
+	MaxAttempts int    `yaml: "max_attempts" env-defalt: "5"`
 	HTTPServer  `yaml:http_server`
 	PgSQL       `yaml:pgl`
 }
@@ -25,9 +26,10 @@ type HTTPServer struct {
 type PgSQL struct {
 	User          string `yaml: "POSTGRES_USER" env-required:"true"`
 	Password      string `yaml: "POSTGRES_PASSWORD" env-required:"true"`
-	NameDB        string `yaml: "POSTGRES_DB" env-defalt:"dataBase"`
-	Port          int    `yaml: "POSTGRES_PORT" envDefault:"migrations"`
-	MigrationPath string `yaml: "MIGRATIONS" env-required:"true"`
+	Host          string `yaml: "POSTGRES_HOST" env-default: "postgres"`
+	NameDB        string `yaml: "POSTGRES_DB" env-defalt: "dataBase"`
+	Port          string `yaml: "POSTGRES_PORT" envDefault: "migrations"`
+	MigrationPath string `yaml: "MIGRATIONS" env-required: "true"`
 }
 
 func MustLoad() *Config {
@@ -54,11 +56,12 @@ func fetchConfigPath() string {
 	}
 	return res
 }
-func (c *PgSQL) PGLDsetination() string {
-	return fmt.Sprintf("postgres://%s:%s@postgres:%d/%s?sslmode=disable",
-		c.User,
-		c.Password,
-		c.Port,
-		c.NameDB,
+func (p *PgSQL) PGLDsetination() string {
+	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s",
+		p.User,
+		p.Password,
+		p.Host,
+		p.Port,
+		p.NameDB,
 	)
 }

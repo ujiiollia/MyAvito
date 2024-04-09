@@ -2,7 +2,8 @@ package main
 
 import (
 	"app/internal/config"
-	postge "app/internal/storage/postgresql"
+	"app/internal/storage/postgresql"
+
 	elog "app/pkg/lib/logger"
 	"context"
 	"log/slog"
@@ -40,17 +41,22 @@ func main() {
 	// _ = user
 
 	//pgl
-	mig, err := migrate.New("file://"+cfg.MigrationPath, cfg.PGLDsetination())
+	mig, err := migrate.New("file://"+cfg.PgSQL.MigrationPath, cfg.PgSQL.PGLDsetination())
 	if err != nil {
 		log.Error("failed to migrate storage", elog.Err(err))
 	}
-	err = postge.ApplyMigrations(mig)
+	err = postgresql.ApplyMigrations(mig)
 	if err != nil {
 		log.Error("failed to apply migration", elog.Err(err))
 
 	}
 	log.Info("migration succsess")
 
+	pool, err := postgresql.GetPgxPool(cfg.PGLDsetination(), cfg.MaxAttempts)
+	if err != nil {
+		log.Error("failed to get pool", elog.Err(err))
+	}
+	_ = pool
 	//роутер
 	router := chi.NewRouter()
 	//MW

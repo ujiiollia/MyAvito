@@ -1,4 +1,4 @@
-package postge
+package postgresql
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ type Migrater interface {
 }
 
 func ApplyMigrations(m Migrater) error {
-	const el = "postgresql.migrations.ApplyMigrations"
+	const el = "postgresql.postgresql.ApplyMigrations"
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("%s: %w", el, err)

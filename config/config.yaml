@@ -2,6 +2,7 @@ env: "local"
 storage_path: "./storage/storage.db"
 
 jwt_key : "wellcometoavitofamily"
+max_attempts: 5
 
 http_server:
   address: "localhost:8080"
@@ -12,6 +13,5 @@ pgl:
   POSTGRES_USER: "novitiate"
   POSTGRES_PASSWORD: "1234"
   POSTGRES_DB: "banners"
-  POSTGRES_PORT: 4455
+  POSTGRES_PORT: 5432
   MIGRATIONS: "./migrations"
-
