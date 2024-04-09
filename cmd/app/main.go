@@ -4,10 +4,14 @@ import (
 	"app/internal/config"
 	"app/internal/storage/sqlite"
 	elog "app/pkg/lib/logger"
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -70,11 +74,31 @@ func main() {
 		WriteTimeout: cfg.HTTPServer.Timeout,
 		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
 	}
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
 	// strat server
-	if err := srv.ListenAndServe(); err != nil {
-		log.Error("failed to start serv")
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Error("failed to start server")
+		}
+	}()
+
+	log.Info("server started")
+	<-done
+
+	// stop server
+	log.Info("stopping server ...")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("failed to stop server", elog.Err(err))
+		return
 	}
-	log.Error("server stopped")
+
+	log.Info("server was shutfown")
 }
 
 const (
