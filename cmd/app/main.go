@@ -2,10 +2,9 @@ package main
 
 import (
 	"app/internal/config"
-	"app/internal/storage/sqlite"
+	postge "app/internal/storage/postgresql"
 	elog "app/pkg/lib/logger"
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/golang-migrate/migrate"
 )
 
 func main() {
@@ -24,37 +24,32 @@ func main() {
 	log := setupLogger(cfg.Env)
 	log.Info("starting application", slog.String("env", cfg.Env))
 	// DB
-	storage, err := sqlite.NewBanner(cfg.StoragePath)
-	if err != nil {
-		log.Error("failed to init storage", elog.Err(err))
-		os.Exit(1)
-	}
-	log.Info("storage created", slog.String("dbPath", cfg.StoragePath))
-	user, err := sqlite.NewUser(cfg.StoragePath)
-	if err != nil {
-		log.Error("failed to init storage", elog.Err(err))
-		os.Exit(1)
-	}
+	// storage, err := sqlite.NewBanner(cfg.StoragePath)
+	// if err != nil {
+	// 	log.Error("failed to init storage", elog.Err(err))
+	// 	os.Exit(1)
+	// }
+	// log.Info("storage created", slog.String("dbPath", cfg.StoragePath))
+	// _ = storage
 
-	_ = storage
-	_ = user
-	{ // Создаем Баннер
-		//todo delete
-		newBanner := sqlite.Banner{
-			FeatureID: 1,
-			TagIDs:    []int{1, 2, 3},
-			Content:   "",
-			IsActive:  true,
-			CreatedAt: "2022-12-31 23:59:59",
-			UpdatedAt: "2022-12-31 23:59:59",
-		}
+	// user, err := sqlite.NewUser(cfg.StoragePath)
+	// if err != nil {
+	// 	log.Error("failed to init storage", elog.Err(err))
+	// 	os.Exit(1)
+	// }
+	// _ = user
 
-		err = storage.AddBanner(newBanner)
-		if err != nil {
-			fmt.Println("Error adding banner:", err)
-			return
-		}
+	//pgl
+	mig, err := migrate.New("file://"+cfg.MigrationPath, cfg.PGLDsetination())
+	if err != nil {
+		log.Error("failed to migrate storage", elog.Err(err))
 	}
+	err = postge.ApplyMigrations(mig)
+	if err != nil {
+		log.Error("failed to apply migration", elog.Err(err))
+
+	}
+	log.Info("migration succsess")
 
 	//роутер
 	router := chi.NewRouter()

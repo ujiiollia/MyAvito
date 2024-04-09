@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"time"
 
@@ -25,7 +26,7 @@ type PgSQL struct {
 	User          string `yaml: "POSTGRES_USER" env-required:"true"`
 	Password      string `yaml: "POSTGRES_PASSWORD" env-required:"true"`
 	NameDB        string `yaml: "POSTGRES_DB" env-defalt:"dataBase"`
-	Port          string `yaml: "POSTGRES_PORT" env-defalt "0.0.0.0:4455"`
+	Port          int    `yaml: "POSTGRES_PORT" envDefault:"migrations"`
 	MigrationPath string `yaml: "MIGRATIONS" env-required:"true"`
 }
 
@@ -52,4 +53,12 @@ func fetchConfigPath() string {
 		res = os.Getenv("CONFIG_PATH")
 	}
 	return res
+}
+func (c *PgSQL) PGLDsetination() string {
+	return fmt.Sprintf("postgres://%s:%s@postgres:%d/%s?sslmode=disable",
+		c.User,
+		c.Password,
+		c.Port,
+		c.NameDB,
+	)
 }
