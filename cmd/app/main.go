@@ -65,7 +65,7 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	//todo handlers
-
+	//todo hash for banners (map [ID banner] srtuct, 5min update)
 	// serv
 	srv := http.Server{
 		Addr:         cfg.Address,
