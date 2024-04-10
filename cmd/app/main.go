@@ -73,7 +73,7 @@ func main() {
 
 	//todo handlers
 	_ = hand
-	// router.Route("GET /ping", hand.Ping)
+	// router.Route("GET /ping", )
 	//todo cache for banners (map [ID banner] srtuct, 5min update)
 	// serv
 	srv := http.Server{
