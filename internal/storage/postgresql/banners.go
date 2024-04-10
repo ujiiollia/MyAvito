@@ -17,8 +17,8 @@ func NewBanner(pgl *postgres) *banner {
 	return &banner{db: pgl}
 }
 
-func (r *banner) Ping(ctx context.Context) error {
-	err := r.db.Ping(ctx)
+func (pgB *banner) Ping(ctx context.Context) error {
+	err := pgB.db.Ping(ctx)
 	if err != nil {
 		return fmt.Errorf("repository.Ping: %w", err)
 	}
