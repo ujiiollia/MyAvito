@@ -2,6 +2,8 @@ package main
 
 import (
 	"app/internal/config"
+	"app/internal/handlers"
+	"app/internal/services"
 	"app/internal/storage/postgresql"
 
 	elog "app/pkg/lib/logger"
@@ -59,7 +61,8 @@ func main() {
 	log.Info("connected to pool succsessfully")
 
 	pg := postgresql.NewPostgres(pool)
-	_ = pg
+	repo := services.NewBanner(pg)
+	hand := handlers.NewBanner(repo)
 	//роутер
 	router := chi.NewRouter()
 	//MW
@@ -69,7 +72,9 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	//todo handlers
-	//todo hash for banners (map [ID banner] srtuct, 5min update)
+	_ = hand
+	// router.Route("GET /ping", hand.Ping)
+	//todo cache for banners (map [ID banner] srtuct, 5min update)
 	// serv
 	srv := http.Server{
 		Addr:         cfg.Address,
