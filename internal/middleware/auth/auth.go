@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-type GetUserRoleFromDB interface {
+type RoleGetter interface {
 	GetRole(string, *gin.Context) (string, error)
 }
 
@@ -45,7 +45,7 @@ const (
 	//GuestRole = "guest"
 )
 
-func CheckRole(isAdmin bool, gur GetUserRoleFromDB) gin.HandlerFunc {
+func CheckRole(isAdmin bool, rg RoleGetter) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userId, ok := ctx.Get("userId")
 		if !ok {
@@ -53,7 +53,7 @@ func CheckRole(isAdmin bool, gur GetUserRoleFromDB) gin.HandlerFunc {
 			return
 		}
 
-		role, err := gur.GetRole(userId.(string), ctx)
+		role, err := rg.GetRole(userId.(string), ctx)
 		if err != nil {
 			ctx.AbortWithError(http.StatusForbidden, errors.New("no user in data base"))
 			return

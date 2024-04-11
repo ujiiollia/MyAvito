@@ -15,6 +15,9 @@ import (
 	"syscall"
 	"time"
 
+	mw "app/internal/middleware"
+
+	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/golang-migrate/migrate"
@@ -63,6 +66,7 @@ func main() {
 	pg := postgresql.NewPostgres(pool)
 	repo := services.NewBanner(pg)
 	hand := handlers.NewBanner(repo)
+	_ = hand
 	//роутер
 	router := chi.NewRouter()
 	//MW
@@ -72,8 +76,8 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	//todo handlers
-	_ = hand
-	// router.Route("GET /ping", )
+	r := gin.Default()
+	r.GET("/user_banner", mw.GetUserBanner(pool))
 	//todo cache for banners (map [ID banner] srtuct, 5min update)
 	// serv
 	srv := http.Server{
