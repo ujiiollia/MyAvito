@@ -1,9 +1,10 @@
 package postgresql
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type users struct {
@@ -14,20 +15,14 @@ func NewUser(pgl *postgres) *users {
 	return &users{dbu: pgl}
 }
 
-func (u *users) GetRole(userId string, ctx *gin.Context) (string, error) {
-	const el = "postgresql.users.GetRole"
-
-	conn, err := u.dbu.Acquire(ctx)
-	if err != nil {
-		return "", fmt.Errorf("%s: %w", el, err)
+func GetRole(userID string, ctx *gin.Context, pool *pgxpool.Pool) (string, error) {
+	if pool == nil {
+		return "", errors.New("database pool was not initialized")
 	}
-	defer conn.Release()
-	var role string
-	err = conn.QueryRow(ctx,
-		`SELECT is_admin FROM "user" WHERE id = $1;`,
-		userId).Scan(&role)
+	var is_admin string
+	err := pool.QueryRow(ctx, "SELECT is_admin FROM users WHERE user_id=$1", userID).Scan(&is_admin)
 	if err != nil {
-		return "", fmt.Errorf("%s: %w", el, err)
+		return "", err
 	}
-	return role, nil
+	return is_admin, nil
 }

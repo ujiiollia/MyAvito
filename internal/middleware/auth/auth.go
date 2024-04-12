@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"app/internal/storage/postgresql"
 	"errors"
 	"net/http"
 	"strings"
