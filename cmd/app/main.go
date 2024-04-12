@@ -2,30 +2,23 @@ package main
 
 import (
 	"app/internal/config"
-	"app/internal/handlers"
-	"app/internal/services"
 	"app/internal/storage/postgresql"
 
 	elog "app/pkg/lib/logger"
-	"context"
 	"log/slog"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	mw "app/internal/middleware"
-
-	"github.com/gin-gonic/gin"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/caarlos0/env"
 	"github.com/golang-migrate/migrate"
 )
 
 func main() {
 	// config
 	cfg := config.MustLoad()
+	cfgPGL := config.Config{}
+	if err := env.Parse(&cfg); err != nil {
+		panic("failed parse config")
+	}
 	// log
 	log := setupLogger(cfg.Env)
 	log.Info("starting application", slog.String("env", cfg.Env))
@@ -46,7 +39,7 @@ func main() {
 	// _ = user
 
 	//pgl
-	mig, err := migrate.New("file://"+cfg.PgSQL.MigrationPath, cfg.PgSQL.PGLDsetination())
+	mig, err := migrate.New("file://"+cfgPGL.MigrationPath, cfg.PgSQL.PGLDsetination())
 	if err != nil {
 		log.Error("failed to migrate storage", elog.Err(err))
 	}
@@ -56,62 +49,67 @@ func main() {
 
 	}
 	log.Info("migration succsess")
+	/*
+	   pool, err := postgresql.GetPgxPool(cfg.PGLDsetination(), cfg.MaxAttempts)
 
-	pool, err := postgresql.GetPgxPool(cfg.PGLDsetination(), cfg.MaxAttempts)
-	if err != nil {
-		log.Error("failed to get pool", elog.Err(err))
-	}
-	log.Info("connected to pool succsessfully")
+	   	if err != nil {
+	   		log.Error("failed to get pool", elog.Err(err))
+	   	}
 
-	pg := postgresql.NewPostgres(pool)
-	repo := services.NewBanner(pg)
-	hand := handlers.NewBanner(repo)
-	_ = hand
-	//роутер
-	router := chi.NewRouter()
-	//MW
-	router.Use(middleware.RequestID) //ID запроса
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer) // поднять после паники в обраточике
-	router.Use(middleware.URLFormat)
+	   log.Info("connected to pool succsessfully")
 
-	//todo handlers
-	r := gin.Default()
-	r.GET("/user_banner", mw.GetUserBanner(pool))
-	//todo cache for banners (map [ID banner] srtuct, 5min update)
-	// serv
-	srv := http.Server{
-		Addr:         cfg.Address,
-		Handler:      router,
-		ReadTimeout:  cfg.HTTPServer.Timeout,
-		WriteTimeout: cfg.HTTPServer.Timeout,
-		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
-	}
+	   pg := postgresql.NewPostgres(pool)
+	   repo := services.NewBanner(pg)
+	   hand := handlers.NewBanner(repo)
+	   _ = hand
+	   //роутер
+	   router := chi.NewRouter()
+	   //MW
+	   router.Use(middleware.RequestID) //ID запроса
+	   router.Use(middleware.Logger)
+	   router.Use(middleware.Recoverer) // поднять после паники в обраточике
+	   router.Use(middleware.URLFormat)
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	   //todo handlers
+	   r := gin.Default()
+	   r.GET("/user_banner", mw.GetUserBanner(pool))
+	   //todo cache for banners (map [ID banner] srtuct, 5min update)
+	   // serv
 
-	// strat server
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			log.Error("failed to start server")
-		}
-	}()
+	   	srv := http.Server{
+	   		Addr:         cfg.Address,
+	   		Handler:      router,
+	   		ReadTimeout:  cfg.HTTPServer.Timeout,
+	   		WriteTimeout: cfg.HTTPServer.Timeout,
+	   		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+	   	}
 
-	log.Info("server started")
-	<-done
+	   done := make(chan os.Signal, 1)
+	   signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	// stop server
-	log.Info("stopping server ...")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	   // strat server
 
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Error("failed to stop server", elog.Err(err))
-		return
-	}
+	   	go func() {
+	   		if err := srv.ListenAndServe(); err != nil {
+	   			log.Error("failed to start server")
+	   		}
+	   	}()
 
-	log.Info("server was shutfown")
+	   log.Info("server started")
+	   <-done
+
+	   // stop server
+	   log.Info("stopping server ...")
+	   ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	   defer cancel()
+
+	   	if err := srv.Shutdown(ctx); err != nil {
+	   		log.Error("failed to stop server", elog.Err(err))
+	   		return
+	   	}
+
+	   log.Info("server was shutfown")
+	*/
 }
 
 const (

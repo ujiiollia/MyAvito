@@ -15,4 +15,6 @@ FROM alpine:latest AS runner
 
 COPY --from=builder /usr/local/src/bin/app /
 COPY config/config.yaml /config.yaml
+USER evs
+EXPOSE 8080
 CMD ["/app --config=config.yaml"]

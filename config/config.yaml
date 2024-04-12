@@ -9,9 +9,3 @@ http_server:
   timeout: 5s
   idle_timeout: 30s
 
-pgl:
-  POSTGRES_USER: "novitiate"
-  POSTGRES_PASSWORD: "1234"
-  POSTGRES_DB: "banners"
-  POSTGRES_PORT: 5432
-  MIGRATIONS: "./migrations"

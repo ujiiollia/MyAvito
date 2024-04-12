@@ -15,7 +15,7 @@ type Config struct {
 	JWTkey      string `yaml: "jwt_key" env-required:"true"`
 	MaxAttempts int    `yaml: "max_attempts" env-defalt: "5"`
 	HTTPServer  `yaml:http_server`
-	PgSQL       `yaml:pgl`
+	PgSQL
 }
 type HTTPServer struct {
 	Address     string        `yaml: "adderss" env-defalt "0.0.0.0:8080"`
@@ -24,12 +24,12 @@ type HTTPServer struct {
 }
 
 type PgSQL struct {
-	User          string `yaml: "POSTGRES_USER" env-required:"true"`
-	Password      string `yaml: "POSTGRES_PASSWORD" env-required:"true"`
-	Host          string `yaml: "POSTGRES_HOST" env-default: "postgres"`
-	NameDB        string `yaml: "POSTGRES_DB" env-defalt: "dataBase"`
-	Port          string `yaml: "POSTGRES_PORT" envDefault: "migrations"`
-	MigrationPath string `yaml: "MIGRATIONS" env-required: "true"`
+	User          string `env: "POSTGRES_USER" env-required:"true"`
+	Password      string `env: "POSTGRES_PASSWORD" env-required:"true"`
+	Host          string `env: "POSTGRES_HOST" env-default: "postgres"`
+	NameDB        string `env: "POSTGRES_DB" env-defalt: "dataBase"`
+	Port          string `env: "POSTGRES_PORT" envDefault: "migrations"`
+	MigrationPath string `env: "MIGRATIONS" env-required: "true"`
 }
 
 func MustLoad() *Config {
