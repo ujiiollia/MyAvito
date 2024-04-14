@@ -2,9 +2,8 @@ package main
 
 import (
 	"app/internal/config"
-	"app/internal/handlers"
 	mw "app/internal/middleware"
-	"app/internal/services"
+	"app/internal/middleware/auth"
 	"app/internal/storage/postgresql"
 	elog "app/pkg/lib/logger"
 	"context"
@@ -44,7 +43,7 @@ func main() {
 	dbURL := cfg.PGLDsetination()
 	fmt.Println("db url:", dbURL)
 
-	mig, err := migrate.New("file://"+cfg.Migrations, dbURL+"?sslmode=disable")
+	mig, err := migrate.New("file://"+cfg.Migrations, dbURL)
 	if err != nil {
 		// log.Info("try force migration")
 		// err = mig.Force(1) // sorry T_T
@@ -62,17 +61,11 @@ func main() {
 	log.Info("migration success")
 
 	pool, err := postgresql.GetPgxPool(cfg.PGLDsetination(), cfg.MaxAttempts)
-
 	if err != nil {
 		log.Error("failed to get pool", elog.Err(err))
 	}
-
 	log.Info("connected to pool successfully")
 
-	pg := postgresql.NewPostgres(pool)
-	repo := services.NewBanner(pg)
-	hand := handlers.NewBanner(repo)
-	_ = hand
 	//роутер
 	router := chi.NewRouter()
 	//MW
@@ -81,12 +74,26 @@ func main() {
 	router.Use(middleware.Recoverer) // поднять после паники в обраточике
 	router.Use(middleware.URLFormat)
 
-	//todo handlers
-	// r := gin.Default()
-	router.Get("/user_banner", mw.GetUserBanner(pool))
-	router.Get("/banner", mw.GetAllBannerByFeatureAndTag(pool))
-	router.Post("/banner", mw.CreateBanner(pool))
-	router.Patch("/banner/:id", mw.PatchBanner(pool))
+	// handlers
+	router.Route("/user_banner", func(r chi.Router) {
+		r.Use(auth.Authorization)
+		r.Use(auth.CheckRole(auth.UserRightsRequired, pool))
+		r.Get("/", mw.GetUserBanner(pool))
+	})
+
+	router.Route("/banner", func(r chi.Router) {
+		r.Use(auth.Authorization)
+		r.Use(auth.CheckRole(auth.AdminRightsRequired, pool))
+
+		r.Get("/", mw.GetAllBannerByFeatureAndTag(pool))
+
+		r.Post("/", mw.CreateBanner(pool))
+
+		r.Patch("/{id}", mw.PatchBanner(pool))
+
+		r.Delete("/{id}", mw.DeleteBanner(pool))
+	})
+
 	// serv
 	srv := http.Server{
 		Addr:         cfg.HTTPAddress,

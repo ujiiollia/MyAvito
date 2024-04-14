@@ -2,12 +2,12 @@ package middleware
 
 import (
 	checkdigits "app/internal/lib/checkDigitsInStr"
-	"app/internal/middleware/auth"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -17,7 +17,6 @@ import (
 const (
 	takeNewestData         = "true"
 	takeFiveMinutesOldData = "false"
-	adminRightsRequired    = true
 )
 
 type UserBanner struct {
@@ -43,7 +42,7 @@ func GetUserBanner(pool *pgxpool.Pool) http.HandlerFunc {
 			tagID := r.URL.Query().Get("tag_id")
 			featureID := r.URL.Query().Get("feature_id")
 
-			query := fmt.Sprintf("SELECT * FROM user_banner WHERE tag_id = %s AND feature_id = %s", tagID, featureID)
+			query := fmt.Sprintf("SELECT * FROM user_banner WHERE tag_id = %s AND feature_id = %s AND is_active = %t", tagID, featureID, true)
 
 			rows, err := pool.Query(r.Context(), query)
 			if err != nil {
@@ -71,9 +70,6 @@ func GetUserBanner(pool *pgxpool.Pool) http.HandlerFunc {
 
 func GetAllBannerByFeatureAndTag(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//check admin rights
-		auth.Authorization()
-		auth.CheckRole(adminRightsRequired, pool)
 
 		featureID := r.URL.Query().Get("feature_id")
 		tagID := r.URL.Query().Get("tag_id")
@@ -121,9 +117,6 @@ func GetAllBannerByFeatureAndTag(pool *pgxpool.Pool) http.HandlerFunc {
 
 func CreateBanner(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//check admin rights
-		auth.Authorization()
-		auth.CheckRole(adminRightsRequired, pool)
 
 		var userBanner UserBanner
 		if err := json.NewDecoder(r.Body).Decode(&userBanner); err != nil {
@@ -170,27 +163,37 @@ func PatchBanner(pool *pgxpool.Pool) http.HandlerFunc {
 		content := r.URL.Query().Get("content")
 		isActive := r.URL.Query().Get("is_active")
 
-		tx, err := pool.Begin(context.Background())
-		if err != nil {
-			http.Error(w, "Failed to begin transaction", http.StatusInternalServerError)
-			return
-		}
-		defer tx.Rollback(context.Background())
-
 		updateSQL := `UPDATE user_banner SET tag_id=$1, feature_id=$2, content=$3, is_active=$4, updated_at=$5 WHERE id=$6`
-		_, err = tx.Exec(context.Background(), updateSQL, tagID, featureID, content, isActive, time.Now(), id)
+		_, err := pool.Exec(context.Background(), updateSQL, tagID, featureID, content, isActive, time.Now(), id)
 		if err != nil {
 			http.Error(w, "Failed to update user_banner", http.StatusInternalServerError)
 			return
 		}
 
-		err = tx.Commit(context.Background())
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("user_banner updated successfully"))
+	}
+}
+
+func DeleteBanner(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Извлекаем id из URL
+		idStr := chi.URLParam(r, "id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
-			http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+			http.Error(w, "Invalid ID", http.StatusBadRequest)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("user_banner updated successfully"))
+		// Вызываем функцию для удаления UserBanner из базы данных
+		// err = removeUserBannerByID(r.Context(), pool, id)
+		_, err = pool.Exec(r.Context(), `DELETE FROM user_banners WHERE id=$1`, id)
+		if err != nil {
+			http.Error(w, "Failed to delete UserBanner", http.StatusInternalServerError)
+			return
+		}
+
+		// Отправляем подтверждение об успешном удалении
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

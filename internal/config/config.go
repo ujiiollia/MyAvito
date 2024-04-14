@@ -45,7 +45,7 @@ type Config struct {
 //		return res
 //	}
 func (c *Config) PGLDsetination() string {
-	return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s",
+	return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable",
 		c.PostgresUser,
 		c.PostgresPassword,
 		c.PostgresHost,
