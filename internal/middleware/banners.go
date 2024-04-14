@@ -2,6 +2,7 @@ package middleware
 
 import (
 	checkdigits "app/internal/lib/checkDigitsInStr"
+	mapcache "app/internal/storage/cache"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,18 +30,23 @@ type UserBanner struct {
 	UpdatedAt string          `json:"updated_at"`
 }
 
-func GetUserBanner(pool *pgxpool.Pool) http.HandlerFunc {
+func GetUserBanner(pool *pgxpool.Pool, cace *mapcache.Cache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		useLastRevision := r.URL.Query().Get("use_last_revision")
+		tagID := r.URL.Query().Get("tag_id")
+		featureID := r.URL.Query().Get("feature_id")
 		switch useLastRevision {
 
 		case takeFiveMinutesOldData:
-			//todo read cache
-			return
+			// read cache
+			if banner, isExist := cace.Get(tagID + ":" + featureID); isExist {
+				json.NewEncoder(w).Encode(banner)
+				json.NewEncoder(w).Encode(banner)
+				return
+			}
+			fallthrough
 
 		case takeNewestData:
-			tagID := r.URL.Query().Get("tag_id")
-			featureID := r.URL.Query().Get("feature_id")
 
 			query := fmt.Sprintf("SELECT * FROM user_banner WHERE tag_id = %s AND feature_id = %s AND is_active = %t", tagID, featureID, true)
 
@@ -64,6 +70,7 @@ func GetUserBanner(pool *pgxpool.Pool) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(banners)
 			return
+
 		}
 	}
 }

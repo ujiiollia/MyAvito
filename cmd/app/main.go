@@ -4,6 +4,7 @@ import (
 	"app/internal/config"
 	mw "app/internal/middleware"
 	"app/internal/middleware/auth"
+	mapcache "app/internal/storage/cache"
 	"app/internal/storage/postgresql"
 	elog "app/pkg/lib/logger"
 	"context"
@@ -66,6 +67,16 @@ func main() {
 	}
 	log.Info("connected to pool successfully")
 
+	//кэш
+
+	mcache := mapcache.New(5*time.Minute, 10*time.Minute)
+
+	go func() {
+		for {
+			mcache.UpdateUserBannerCache(pool)
+			time.Sleep(5 * time.Minute)
+		}
+	}()
 	//роутер
 	router := chi.NewRouter()
 	//MW
@@ -78,7 +89,8 @@ func main() {
 	router.Route("/user_banner", func(r chi.Router) {
 		r.Use(auth.Authorization)
 		r.Use(auth.CheckRole(auth.UserRightsRequired, pool))
-		r.Get("/", mw.GetUserBanner(pool))
+
+		r.Get("/", mw.GetUserBanner(pool, mcache))
 	})
 
 	router.Route("/banner", func(r chi.Router) {
