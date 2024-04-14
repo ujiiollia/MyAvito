@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type RoleGetter interface {
@@ -46,15 +47,15 @@ const (
 	//GuestRole = "guest"
 )
 
-func CheckRole(isAdmin bool, rg RoleGetter) gin.HandlerFunc {
+func CheckRole(isAdmin bool, pool *pgxpool.Pool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+
 		userId, ok := ctx.Get("userId")
 		if !ok {
 			ctx.AbortWithError(http.StatusUnauthorized, errors.New("role not found"))
 			return
 		}
-
-		role, err := rg.GetRole(userId.(string), ctx)
+		role, err := postgresql.GetRole(userId.(string), ctx, pool)
 		if err != nil {
 			ctx.AbortWithError(http.StatusForbidden, errors.New("no user in data base"))
 			return

@@ -30,6 +30,7 @@ go.work
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 .vs*
+.ide*
 # Local History for Visual Studio Code
 .history/
 

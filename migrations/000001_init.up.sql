@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS user_banner (
 		id INTEGER PRIMARY KEY ,
-		tag_ids INTEGER NOT NULL,
+		tag_id INTEGER NOT NULL,
 		feature_id INTEGER NOT NULL,
 		content JSON NOT NULL,
 		is_active BOOLEAN DEFAULT TRUE,
@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS user_banner (
 	);
 
 CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY ,
-		is_admin VARCHAR(5) NOT NULL,
+		user_id INTEGER PRIMARY KEY ,
+		is_admin VARCHAR(5) NOT NULL
 	);
 
 COMMIT;

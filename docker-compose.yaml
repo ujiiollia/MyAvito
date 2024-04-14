@@ -1,12 +1,15 @@
-version: '3'
+version: '3.@latest'
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:alpine
+    hostname: postgres
+    #user: "evs"
     container_name: postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      - POSTGRES_USER= ${POSTGRES_USER}
+      - POSTGRES_PASSWORD= ${POSTGRES_PASSWORD}
+      - POSTGRES_DB= ${POSTGRES_DB}
+        #POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./postgres:/var/lib/postgresql/data
     ports:
@@ -18,20 +21,38 @@ services:
       retries: 5
     command: [ "postgres", "-c", "log_statement=all" ]
 
-  app:
-    build:
-      context: .
-    user: "evs:grp"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - "MIGRATIONS_PATH:${MIGRATIONS}"
-      - "POSTGRES_USER:${POSTGRES_USER}"
-      - "POSTGRES_PASSWORD:${POSTGRES_PASSWORD}"
-      - "POSTGRES_DB:${POSTGRES_DB}"
-      - "POSTGRES_PORT:${POSTGRES_PORT}"
-    volumes:
-      - "./${MIGRATIONS}:/app/${MIGRATIONS}"
-    ports:
-      - "${SERVICE_PORT}:${SERVICE_PORT}"
+    # networks:
+    #   - postgres
+
+
+#   app:
+#     build:
+#       context: .
+#     #user: "evs"
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+
+#     networks:
+#       - postgres
+#     command: tail -F anything
+
+#     environment:
+#       - "MIGRATIONS_PATH:${MIGRATIONS}"
+#       - "POSTGRES_USER:${POSTGRES_USER}"
+#       - "POSTGRES_PASSWORD:${POSTGRES_PASSWORD}"
+#       - "POSTGRES_DB:${POSTGRES_DB}"
+#       - "POSTGRES_PORT:${POSTGRES_PORT}"
+#     # volumes:
+#     #   - "./${MIGRATIONS}:/app/${MIGRATIONS}"
+#     volumes:
+#     - "./${MIGRATIONS}:/migrations"
+
+#     ports:
+#       - "${SERVICE_PORT}:${POSTGRES_PORT}"
+#       # - 5432:5432
+
+  
+# networks:
+#   postgres:
+#     driver: bridge

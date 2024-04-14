@@ -8,6 +8,7 @@ import (
 	"app/internal/storage/postgresql"
 	elog "app/pkg/lib/logger"
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,33 +17,49 @@ import (
 	"time"
 
 	"github.com/caarlos0/env"
-	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/v4"
+)
+
+const (
+	envLocal = "local"
+	envDev   = "dev"
+	envProd  = "prod"
 )
 
 func main() {
 	// config
-	cfg := config.MustLoad()
-	cfgPGL := config.Config{}
-	if err := env.Parse(&cfg); err != nil {
+	// cfg := config.MustLoad()
+	cfg := config.Config{}
+	err := env.Parse(&cfg)
+	if err != nil {
 		panic("failed parse config")
 	}
+	fmt.Printf("Parsed Config: %+v", cfg)
 	// log
-	log := setupLogger(cfg.Env)
-	log.Info("starting application", slog.String("env", cfg.Env))
+	log := setupLogger(envLocal)
 
-	mig, err := migrate.New("file://"+cfgPGL.MigrationPath, cfg.PgSQL.PGLDsetination())
+	log.Info("starting application")
+	dbURL := cfg.PGLDsetination()
+	fmt.Println("db url:", dbURL)
+
+	mig, err := migrate.New("file://"+cfg.Migrations, dbURL+"?sslmode=disable")
 	if err != nil {
+		// log.Info("try force migration")
+		// err = mig.Force(1) // sorry T_T
+		// if err != nil {
+		// 	log.Error("Could not force migrate: %v", err)
+		// }
 		log.Error("failed to migrate storage", elog.Err(err))
 	}
+
 	err = postgresql.ApplyMigrations(mig)
 	if err != nil {
 		log.Error("failed to apply migration", elog.Err(err))
 
 	}
-	log.Info("migration succsess")
+	log.Info("migration success")
 
 	pool, err := postgresql.GetPgxPool(cfg.PGLDsetination(), cfg.MaxAttempts)
 
@@ -50,7 +67,7 @@ func main() {
 		log.Error("failed to get pool", elog.Err(err))
 	}
 
-	log.Info("connected to pool succsessfully")
+	log.Info("connected to pool successfully")
 
 	pg := postgresql.NewPostgres(pool)
 	repo := services.NewBanner(pg)
@@ -65,23 +82,24 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	//todo handlers
-	r := gin.Default()
-	r.GET("/user_banner", mw.GetUserBanner(pool))
-	r.GET("/banner", mw.GetBanner(pool))
-
+	// r := gin.Default()
+	router.Get("/user_banner", mw.GetUserBanner(pool))
+	router.Get("/banner", mw.GetAllBannerByFeatureAndTag(pool))
+	router.Post("/banner", mw.CreateBanner(pool))
+	router.Patch("/banner/:id", mw.PatchBanner(pool))
 	// serv
 	srv := http.Server{
-		Addr:         cfg.Address,
+		Addr:         cfg.HTTPAddress,
 		Handler:      router,
-		ReadTimeout:  cfg.HTTPServer.Timeout,
-		WriteTimeout: cfg.HTTPServer.Timeout,
-		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+		ReadTimeout:  cfg.HTTPTimeout,
+		WriteTimeout: cfg.HTTPTimeout,
+		IdleTimeout:  cfg.HTTPIdleTimeout,
 	}
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	// strat server
+	// start server
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
@@ -102,15 +120,9 @@ func main() {
 		return
 	}
 
-	log.Info("server was shutfown")
+	log.Info("server was shutdown")
 
 }
-
-const (
-	envLocal = "local"
-	envDev   = "dev"
-	envProd  = "prod"
-)
 
 func setupLogger(env string) *slog.Logger {
 	var log slog.Logger
