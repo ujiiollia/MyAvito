@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -185,16 +184,10 @@ func PatchBanner(pool *pgxpool.Pool) http.HandlerFunc {
 func DeleteBanner(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Извлекаем id из URL
-		idStr := chi.URLParam(r, "id")
-		id, err := strconv.ParseInt(idStr, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid ID", http.StatusBadRequest)
-			return
-		}
+		tagID := r.URL.Query().Get("tag_id")
+		featureID := r.URL.Query().Get("feature_id")
 
-		// Вызываем функцию для удаления UserBanner из базы данных
-		// err = removeUserBannerByID(r.Context(), pool, id)
-		_, err = pool.Exec(r.Context(), `DELETE FROM user_banners WHERE id=$1`, id)
+		_, err := pool.Exec(r.Context(), `DELETE FROM user_banners WHERE tag_id=$1, feature_id=$2`, tagID, featureID)
 		if err != nil {
 			http.Error(w, "Failed to delete UserBanner", http.StatusInternalServerError)
 			return

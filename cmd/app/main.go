@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -29,10 +30,13 @@ const (
 )
 
 func main() {
-	// config
-	// cfg := config.MustLoad()
+	err := godotenv.Load(".env")
+	if err != nil {
+		panic("Error loading .env file")
+	}
+
 	cfg := config.Config{}
-	err := env.Parse(&cfg)
+	err = env.Parse(&cfg)
 	if err != nil {
 		panic("failed parse config")
 	}
